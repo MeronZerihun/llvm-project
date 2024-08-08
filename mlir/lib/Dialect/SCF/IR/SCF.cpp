@@ -75,9 +75,8 @@ void SCFDialect::initialize() {
   addInterfaces<SCFInlinerInterface>();
   declarePromisedInterfaces<bufferization::BufferDeallocationOpInterface,
                             InParallelOp, ReduceReturnOp>();
-  declarePromisedInterfaces<bufferization::BufferizableOpInterface, ConditionOp,
-                            ExecuteRegionOp, ForOp, IfOp, IndexSwitchOp,
-                            ForallOp, InParallelOp, WhileOp, YieldOp>();
+  declarePromisedInterfaces<bufferization::BufferizableOpInterface, ConditionOp, BreakOp, ExecuteRegionOp, ForOp, IfOp, IndexSwitchOp,
+  ForallOp, InParallelOp, WhileOp, YieldOp>();
   declarePromisedInterface<ValueBoundsOpInterface, ForOp>();
 }
 
@@ -306,6 +305,31 @@ void ConditionOp::getSuccessorRegions(
   if (!boolAttr || !boolAttr.getValue())
     regions.emplace_back(whileOp.getResults());
 }
+
+// SCFExt: BreakOp
+
+MutableOperandRange
+BreakOp::getMutableSuccessorOperands(RegionBranchPoint point) {
+  assert((point.isParent()) &&
+         "break op can only exit a for or while loop");
+  // Pass all operands except the condition to the successor region.
+  return getArgsMutable();
+}
+
+void BreakOp::getSuccessorRegions(
+    ArrayRef<Attribute> operands, SmallVectorImpl<RegionSuccessor> &regions) {
+  FoldAdaptor adaptor(operands, *this);
+
+  ForOp forOp = getParentOp();
+
+  auto boolAttr = dyn_cast_or_null<BoolAttr>(adaptor.getCondition());
+  // if (!boolAttr || boolAttr.getValue())
+  //   regions.emplace_back(&whileOp.getAfter(),
+  //                        whileOp.getAfter().getArguments());
+  if (!boolAttr || !boolAttr.getValue())
+    regions.emplace_back(forOp.getResults());
+}
+
 
 //===----------------------------------------------------------------------===//
 // ForOp
