@@ -72,27 +72,6 @@ def ConditionOp : SCF_Op<"condition", [
       [{ `(` $condition `)` attr-dict ($args^ `:` type($args))? }];
 }
 
-//===----------------------------------------------------------------------===//
-// SCFExt: BreakOp
-//===----------------------------------------------------------------------===//
-def BreakOp : SCF_Op<"break", [ ParentOneOf<["ForOp", "WhileOp"]>, Pure, ReturnLike, Terminator]>,
-  DeclareOpInterfaceMethods<RegionBranchTerminatorOpInterface,
-    ["getSuccessorRegions"]> {
-  let summary = "conditional loop break";
-  let description = [{
-    // TODO: Add detailed description here.
-
-    // Basic semantics: scf.break(%condition) %args : type(%args)
-    // Pseudocode: if %condition is true:
-    //             yield %args; 
-    //             break;
-  }];
-
-  let arguments = (ins I1:$condition, Variadic<AnyType>:$args);
-
-  let assemblyFormat =
-      [{ `(` $condition `)` attr-dict ($args^ `:` type($args))? }];
-}
 
 //===----------------------------------------------------------------------===//
 // ExecuteRegionOp
@@ -1211,6 +1190,29 @@ def YieldOp : SCF_Op<"yield", [Pure, ReturnLike, Terminator,
   let assemblyFormat =
       [{  attr-dict ($results^ `:` type($results))? }];
   // let hasVerifier = 1; // TODO: Check if returned values match that of parent results
+}
+
+
+//===----------------------------------------------------------------------===//
+// BreakOp
+//===----------------------------------------------------------------------===//
+def BreakOp : SCF_Op<"break", [ HasParent<"ForOp">, DeclareOpInterfaceMethods<RegionBranchTerminatorOpInterface,
+    ["getSuccessorRegions"]>, 
+    Pure, Terminator]>
+  {
+  let summary = "conditional loop break";
+  let description = [{
+    // TODO: Add detailed description here.
+
+    // Basic semantics: scf.break(%condition) %args : type(%args)
+    // Pseudocode: if %condition is true:
+    //             yield %args; 
+    //             break;
+  }];
+
+  let arguments = (ins I1:$condition, Variadic<AnyType>:$args);
+  let assemblyFormat =
+      [{ `(` $condition `)` attr-dict ($args^ `:` type($args))? }];
 }
 
 #endif // MLIR_DIALECT_SCF_SCFOPS
