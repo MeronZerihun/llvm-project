@@ -1196,9 +1196,10 @@ def YieldOp : SCF_Op<"yield", [Pure, ReturnLike, Terminator,
 //===----------------------------------------------------------------------===//
 // BreakOp
 //===----------------------------------------------------------------------===//
-def BreakOp : SCF_Op<"break", [ HasParent<"ForOp">, DeclareOpInterfaceMethods<RegionBranchTerminatorOpInterface,
-    ["getSuccessorRegions"]>, 
-    Pure, Terminator]>
+def BreakOp : SCF_Op<"break", [ 
+  DeclareOpInterfaceMethods<BranchOpInterface, ["getSuccessorForOperands"]>,
+  HasParent<"ForOp">,
+  Pure]>
   {
   let summary = "conditional loop break";
   let description = [{
@@ -1206,7 +1207,7 @@ def BreakOp : SCF_Op<"break", [ HasParent<"ForOp">, DeclareOpInterfaceMethods<Re
 
     // Basic semantics: scf.break(%condition) %args : type(%args)
     // Pseudocode: if %condition is true:
-    //             yield %args; 
+    //             yield %args : type(%args); 
     //             break;
   }];
 

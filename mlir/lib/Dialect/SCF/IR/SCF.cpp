@@ -306,31 +306,6 @@ void ConditionOp::getSuccessorRegions(
     regions.emplace_back(whileOp.getResults());
 }
 
-// SCFExt: BreakOp
-
-MutableOperandRange
-BreakOp::getMutableSuccessorOperands(RegionBranchPoint point) {
-  assert((point.isParent()) &&
-         "break op can only exit a for or while loop");
-  // Pass all operands except the condition to the successor region.
-  return getArgsMutable();
-}
-
-void BreakOp::getSuccessorRegions(
-    ArrayRef<Attribute> operands, SmallVectorImpl<RegionSuccessor> &regions) {
-  FoldAdaptor adaptor(operands, *this);
-
-  ForOp forOp = getParentOp();
-
-  auto boolAttr = dyn_cast_or_null<BoolAttr>(adaptor.getCondition());
-  // if (!boolAttr || boolAttr.getValue())
-  //   regions.emplace_back(&whileOp.getAfter(),
-  //                        whileOp.getAfter().getArguments());
-  if (!boolAttr || !boolAttr.getValue())
-    regions.emplace_back(forOp.getResults());
-}
-
-
 //===----------------------------------------------------------------------===//
 // ForOp
 //===----------------------------------------------------------------------===//
@@ -4358,6 +4333,21 @@ void IndexSwitchOp::getCanonicalizationPatterns(RewritePatternSet &results,
                                                 MLIRContext *context) {
   results.add<FoldConstantCase>(context);
 }
+
+SuccessorOperands BreakOp::getSuccessorOperands(unsigned index) {
+  auto range = getODSOperandIndexAndLength(1);
+  auto mutableRange = ::mlir::MutableOperandRange(getOperation(), range.first, range.second);
+  return SuccessorOperands(mutableRange);
+}
+
+Block *BreakOp::getSuccessorForOperands(ArrayRef<Attribute> operands) {
+  ForOp forOp = getParentOp();
+  auto *nextBlock = forOp->getSuccessor(0);
+  return nextBlock;
+}
+
+
+
 
 //===----------------------------------------------------------------------===//
 // TableGen'd op method definitions
